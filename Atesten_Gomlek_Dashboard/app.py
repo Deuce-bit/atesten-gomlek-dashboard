@@ -19,11 +19,12 @@ import csv
 st.set_page_config(page_title="Ateşten Gömlek: Master Dashboard", layout="wide")
 
 # File Paths
-GEO_CSV = os.path.join("Final", "scenes_geocoded.csv")
-OCC_CSV = os.path.join("Final", "occurrences_final.csv")
-THEME_CSV = os.path.join("Final", "scenes_thematic.csv")
-CHARS_CSV = "characters_master.csv"
-ENRICHED_CHARS_CSV = os.path.join("Final", "characters_enriched.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GEO_CSV = os.path.join(BASE_DIR, "Final", "scenes_geocoded.csv")
+OCC_CSV = os.path.join(BASE_DIR, "Final", "occurrences_final.csv")
+THEME_CSV = os.path.join(BASE_DIR, "Final", "scenes_thematic.csv")
+CHARS_CSV = os.path.join(BASE_DIR, "characters_master.csv")
+ENRICHED_CHARS_CSV = os.path.join(BASE_DIR, "Final", "characters_enriched.csv")
 
 ALL_THEMES = ['Ideology & Politics', 'Combat & Violence', 'Romance & Tragedy', 'Logistics & Movement']
 
