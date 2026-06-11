@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_10323ae13c3f56a9bb8dc90daf728548 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+     <div style="
+     position: fixed; 
+     bottom: 50px; left: 50px; width: 150px; height: auto; 
+     background-color: white; border:2px solid grey; z-index:9999; font-size:14px;
+     padding: 10px; border-radius: 5px;">
+     <b>Chapter Legend</b><br>
+     <i class="fa fa-circle" style="color:lightblue"></i> Ch 13<br></div>
+    
+    <div style="
+        position: fixed; 
+        top: 20px; right: 20px; width: 300px; 
+        background-color: white; border:2px solid grey; 
+        z-index:9999; font-size:14px; padding: 15px; border-radius: 8px;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        font-family: sans-serif;
+    ">
+        <h3 style="margin-top:0; margin-bottom: 5px;">Story Navigator</h3>
+        <p style="margin-top:0; font-size: 12px; color: #555;">Follow All Characters's journey.</p>
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <button id="btn-prev" onclick="changeStory(-1)" style="padding: 6px 12px; cursor:pointer; font-weight: bold;">&laquo; Prev</button>
+            <span id="story-counter" style="line-height: 28px; font-weight: bold;">1 / 3</span>
+            <button id="btn-next" onclick="changeStory(1)" style="padding: 6px 12px; cursor:pointer; font-weight: bold;">Next &raquo;</button>
+        </div>
+    </div>
+    
+    <script>
+        var storyData = [
+            { lat: 39.9327342, lon: 32.8746726, html: `        <div style="width: 300px; font-family: sans-serif;">            <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>            <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>            <p style="font-size: 13px;"><b>Action:</b> The first doctor explains that he investigated the documents of Reserve Lieutenant Peyami and found no records of a nurse named Ayşe or a colonel named İhsan.</p>        </div>        ` },
+{ lat: 39.93280174902942, lon: 32.87459886311219, html: `        <div style="width: 300px; font-family: sans-serif;">            <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>            <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>            <p style="font-size: 13px;"><b>Action:</b> The second doctor inquires about Peyami&#39;s case, asking if he has any relatives and discussing the medical reality behind his writings.</p>        </div>        ` },
+{ lat: 39.932593320140356, lon: 32.87468496386455, html: `        <div style="width: 300px; font-family: sans-serif;">            <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>            <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>            <p style="font-size: 13px;"><b>Action:</b> Peyami Bey dies at the hospital during an operation to extract a bullet from his brain, leaving behind his manuscript.</p>        </div>        ` }
+        ];
+        var currentStoryIdx = 0;
+        var mapInstance = null;
+        var activePopup = null;
+
+        // Wait for Leaflet map to initialize
+        setTimeout(function() {
+            for (var key in window) {
+                if (window[key] && window[key].flyTo) {
+                    mapInstance = window[key];
+                    break;
+                }
+            }
+            if (mapInstance && storyData.length > 0) {
+                // Initialize first scene
+                goToStory(0);
+            }
+        }, 1000);
+
+        function changeStory(dir) {
+            var newIdx = currentStoryIdx + dir;
+            if (newIdx >= 0 && newIdx < storyData.length) {
+                goToStory(newIdx);
+            }
+        }
+
+        function goToStory(idx) {
+            currentStoryIdx = idx;
+            var node = storyData[idx];
+            
+            // Update counter text
+            document.getElementById('story-counter').innerText = (idx + 1) + ' / ' + storyData.length;
+            
+            // Disable/Enable buttons at ends of array
+            document.getElementById('btn-prev').disabled = (idx === 0);
+            document.getElementById('btn-next').disabled = (idx === storyData.length - 1);
+
+            // Fly camera to location smoothly
+            mapInstance.flyTo([node.lat, node.lon], 13, {
+                animate: true,
+                duration: 1.5
+            });
+
+            // Open the popup slightly above the marker
+            setTimeout(function() {
+                if (activePopup) {
+                    mapInstance.closePopup(activePopup);
+                }
+                activePopup = L.popup({offset: [0, -10]})
+                    .setLatLng([node.lat, node.lon])
+                    .setContent(node.html)
+                    .openOn(mapInstance);
+            }, 500);
+        }
+    </script>
+    
+    
+            <div class="folium-map" id="map_10323ae13c3f56a9bb8dc90daf728548" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_10323ae13c3f56a9bb8dc90daf728548 = L.map(
+                "map_10323ae13c3f56a9bb8dc90daf728548",
+                {
+                    center: [39.9, 31.0],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 6,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_08a98a417c832cb7221984f9d4e733a8 = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_08a98a417c832cb7221984f9d4e733a8.addTo(map_10323ae13c3f56a9bb8dc90daf728548);
+        
+    
+            var marker_eb242a43d1246881d227b55f13d806c0 = L.marker(
+                [39.9327342, 32.8746726],
+                {
+}
+            ).addTo(map_10323ae13c3f56a9bb8dc90daf728548);
+        
+    
+            var div_icon_1c5866060cf47bc1e3af4a2f3d03412f = L.divIcon({
+  "html": "\n            \u003cdiv style=\"\n                background-color: lightblue;\n                width: 24px;\n                height: 24px;\n                border-radius: 50%;\n                border: 2px solid white;\n                color: white;\n                text-align: center;\n                line-height: 20px;\n                font-weight: bold;\n                font-size: 12px;\n                box-shadow: 2px 2px 4px rgba(0,0,0,0.5);\n            \"\u003e\n                13\n            \u003c/div\u003e\n        ",
+  "className": "empty",
+});
+        
+    
+        var popup_ffb903482c399c36165476e95dc754fc = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_3f8e1108b1d2f81b36f0242795641c70 = $(`<div id="html_3f8e1108b1d2f81b36f0242795641c70" style="width: 100.0%; height: 100.0%;">         <div style="width: 300px; font-family: sans-serif;">             <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>             <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>             <p style="font-size: 13px;"><b>Action:</b> The first doctor explains that he investigated the documents of Reserve Lieutenant Peyami and found no records of a nurse named Ayşe or a colonel named İhsan.</p>         </div>         </div>`)[0];
+                popup_ffb903482c399c36165476e95dc754fc.setContent(html_3f8e1108b1d2f81b36f0242795641c70);
+            
+        
+
+        marker_eb242a43d1246881d227b55f13d806c0.bindPopup(popup_ffb903482c399c36165476e95dc754fc)
+        ;
+
+        
+    
+    
+            marker_eb242a43d1246881d227b55f13d806c0.bindTooltip(
+                `<div>
+                     Birinci Doktor at Ankara: Cebeci: Cebeci Hastahanesi
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_eb242a43d1246881d227b55f13d806c0.setIcon(div_icon_1c5866060cf47bc1e3af4a2f3d03412f);
+            
+    
+            var marker_2a744a30c692db1a4520f9e0d0b9a44b = L.marker(
+                [39.93280174902942, 32.87459886311219],
+                {
+}
+            ).addTo(map_10323ae13c3f56a9bb8dc90daf728548);
+        
+    
+            var div_icon_1bb2f7bc6656611d77aa509618663781 = L.divIcon({
+  "html": "\n            \u003cdiv style=\"\n                background-color: lightblue;\n                width: 24px;\n                height: 24px;\n                border-radius: 50%;\n                border: 2px solid white;\n                color: white;\n                text-align: center;\n                line-height: 20px;\n                font-weight: bold;\n                font-size: 12px;\n                box-shadow: 2px 2px 4px rgba(0,0,0,0.5);\n            \"\u003e\n                13\n            \u003c/div\u003e\n        ",
+  "className": "empty",
+});
+        
+    
+        var popup_6b962c8bab802393c6ada7c0f4295f35 = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_24bb106987346425bbd383d840931f99 = $(`<div id="html_24bb106987346425bbd383d840931f99" style="width: 100.0%; height: 100.0%;">         <div style="width: 300px; font-family: sans-serif;">             <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>             <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>             <p style="font-size: 13px;"><b>Action:</b> The second doctor inquires about Peyami&#39;s case, asking if he has any relatives and discussing the medical reality behind his writings.</p>         </div>         </div>`)[0];
+                popup_6b962c8bab802393c6ada7c0f4295f35.setContent(html_24bb106987346425bbd383d840931f99);
+            
+        
+
+        marker_2a744a30c692db1a4520f9e0d0b9a44b.bindPopup(popup_6b962c8bab802393c6ada7c0f4295f35)
+        ;
+
+        
+    
+    
+            marker_2a744a30c692db1a4520f9e0d0b9a44b.bindTooltip(
+                `<div>
+                     İkinci Doktor at Ankara: Cebeci: Cebeci Hastahanesi
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_2a744a30c692db1a4520f9e0d0b9a44b.setIcon(div_icon_1bb2f7bc6656611d77aa509618663781);
+            
+    
+            var marker_e4c9ba957964ba839e21388eee35a232 = L.marker(
+                [39.932593320140356, 32.87468496386455],
+                {
+}
+            ).addTo(map_10323ae13c3f56a9bb8dc90daf728548);
+        
+    
+            var div_icon_e2e3351f03d3d90b93b065476096963c = L.divIcon({
+  "html": "\n            \u003cdiv style=\"\n                background-color: lightblue;\n                width: 24px;\n                height: 24px;\n                border-radius: 50%;\n                border: 2px solid white;\n                color: white;\n                text-align: center;\n                line-height: 20px;\n                font-weight: bold;\n                font-size: 12px;\n                box-shadow: 2px 2px 4px rgba(0,0,0,0.5);\n            \"\u003e\n                13\n            \u003c/div\u003e\n        ",
+  "className": "empty",
+});
+        
+    
+        var popup_98f59be60ab8038e668e39d6f9d924df = L.popup({
+  "maxWidth": 350,
+});
+
+        
+            
+                var html_d0ae5d1ea3683487bd18f0bbe3202c56 = $(`<div id="html_d0ae5d1ea3683487bd18f0bbe3202c56" style="width: 100.0%; height: 100.0%;">         <div style="width: 300px; font-family: sans-serif;">             <h4 style="margin-top: 0; color: lightblue;">Chapter 13</h4>             <b>Location:</b> Ankara: Cebeci: Cebeci Hastahanesi<br><br>             <p style="font-size: 13px;"><b>Action:</b> Peyami Bey dies at the hospital during an operation to extract a bullet from his brain, leaving behind his manuscript.</p>         </div>         </div>`)[0];
+                popup_98f59be60ab8038e668e39d6f9d924df.setContent(html_d0ae5d1ea3683487bd18f0bbe3202c56);
+            
+        
+
+        marker_e4c9ba957964ba839e21388eee35a232.bindPopup(popup_98f59be60ab8038e668e39d6f9d924df)
+        ;
+
+        
+    
+    
+            marker_e4c9ba957964ba839e21388eee35a232.bindTooltip(
+                `<div>
+                     Peyami Bey at Ankara: Cebeci: Cebeci Hastahanesi
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+                marker_e4c9ba957964ba839e21388eee35a232.setIcon(div_icon_e2e3351f03d3d90b93b065476096963c);
+            
+</script>
+</html>
